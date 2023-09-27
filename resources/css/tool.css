@@ -1,0 +1,35 @@
+/* Nova Tool CSS */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  outline: none;
+}
+
+.mdesk-chat {
+  color: #64748B;
+}
+
+@keyframes spin {
+  to {
+      transform: rotate(360deg);
+  }
+}
+.animate-spin {
+    animation: spin .5s linear infinite;
+}
+
+@layer utilities {
+  @variants responsive {
+    .hie-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hie-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  }
+}
