@@ -28,6 +28,7 @@ class MessageRequest extends FormRequest
         return [
             'messageId' => ['nullable', 'string', 'between:1,4096'],
             'text' => ['nullable', 'string', 'between:1,4096'],
+            'created_at' => ['nullable', 'regex:/^[a-z0-9\s]*$/i', 'between:1,4096'],
         ];
         // $limits = request()->chat->getLimits();
 

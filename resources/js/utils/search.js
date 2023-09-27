@@ -1,15 +1,17 @@
 import { ref, watch } from 'vue'
 import { createGlobalState } from '@vueuse/core'
-import { useDialog } from '@utils'
+import { useDialog, useSidebarTabs } from '@utils'
 
 export default createGlobalState(() => {
-  const { data: dialog } = useDialog()
+  const { chatData: dialog } = useDialog()
   const visible = ref(false)
 
   const node = ref(null)
+  const searchVal = ref(null)
+
 
   const show = () => {
-    visible.value = true
+    visible.value = true;
   }
 
   const hide = () => {
@@ -22,9 +24,15 @@ export default createGlobalState(() => {
         node.value.focus()
       }
     },
+    change: (e) => {
+      searchVal.value = e.target.value
+    },
     keydown: (e) => {
       if (e.key == 'Escape' && dialog.chat == null) {
         hide()
+      }
+      if (e.key == 'Enter') {
+        searchVal.value = e.target.value
       }
     }
   }
@@ -38,6 +46,7 @@ export default createGlobalState(() => {
   return {
     visible,
     node,
+    searchVal,
     show,
     hide,
     events,

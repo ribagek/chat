@@ -79,14 +79,25 @@ class Chat extends Model
      * Отправка сообщения в чат
      *
      * @param  int  $member_id
-     * @param  array  $object
+     * @param  array  $messageData
      * @return object
      */
-    public function sendMessage($object = [], $member_id = null)
+    public function sendMessage($messageData = [], $member_id = null)
     {
-        return $this->messages()->create([
-            'member_id' => $member_id,
-        ] + $object);
+        if (isset($messageData['message_id']) && $messageData['message_id']) {
+          $message_id = $messageData['message_id'];
+          unset($messageData['message_id']);
+          
+          $message = $this->messages()->where('id', $message_id)->first();
+          $message->fill($messageData);
+          $message->save();
+          
+          return $message;
+        } else {
+          return $this->messages()->create([
+              'member_id' => $member_id,
+            ] + $messageData);
+        }
     }
 
     /**
@@ -134,13 +145,13 @@ class Chat extends Model
      * Отправка сообщений в чат
      *
      * @param  object  $item
-     * @param  object|array  $object
+     * @param  object|array  $messageData
      * @return void
      */
-    public function addMessage($item, $object)
+    public function addMessage($item, $messageData)
     {
         $member = $this->addToChat($item);
-        $message = $this->sendMessage($object, $member->id);
+        $message = $this->sendMessage($messageData, $member->id);
 
         /** Отправка в социальные сети */
         // try {

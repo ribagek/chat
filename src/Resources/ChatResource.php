@@ -21,11 +21,23 @@ class ChatResource extends JsonResource
         return [
             'id' => $this->id,
             'chat' => [
+                'id' => $this->id,
+                'name' => $client ? $client->getName() : 'DELETED',
                 'created_at' => $this->created_at,
                 'unread' => $this->getUnReads(),
                 'star' => $this->stars()->exists(),
                 'message' => new MessageResource($this->getMessage()),
                 'members' => $this->getMembers(),
+                'photo' => $client?->photo ?? '?',
+              //duplicated robot array to match data format on front-end
+                'robot' => [
+                  'id' => $client?->robot->id,
+                  'name' => $client?->robot->name,
+                  'bot' => [
+                    'title' => $client?->robot->bot->title,
+                    'photo' => $client?->robot->bot->title ? '/images/bot/' . $client?->robot->bot->title . '.png' : null,
+                  ],
+                ],
             ],
             'details' => [
                 'id' => $client?->id,
@@ -58,6 +70,7 @@ class ChatResource extends JsonResource
             ->where('member_type', '!=', Client::class)
             ->get()->map(fn ($member) => [
                 'name' => $member->member->name,
+                'photo' => $member->member->photo,
                 'added_at' => $member->pivot->added_at,
             ]);
     }

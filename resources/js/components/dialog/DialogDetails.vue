@@ -1,23 +1,29 @@
 <script setup>
-import { useDialog, useDateFormatter } from "@utils";
+import { watch } from "vue";
+import { useDialog, useDateFormatter, useEventBus } from "@utils";
 import { Avatar, Dropdown, DropdownItem } from "@components";
 import { DotsMenuIcon, CloseIcon, TelegramIcon } from "@icons";
 
 const emit = defineEmits(["close"]);
+const { bus } = useEventBus();
 
-const { data: dialog } = useDialog();
+const { chatData: dialog } = useDialog();
 
-const members = dialog.chat.members;
+let members = dialog.chat.members;
+
+if (typeof members.length === 'undefined') {
+  members = Object.values(members);
+}
 </script>
 
 <template>
   <div
-    class="z-[55] md:z-20 fixed md:absolute top-0 right-0 w-[80%] md:w-[284px] h-full border-l border-slate-100 bg-white overflow-auto"
+    class="z-[55] md:z-10 fixed md:absolute top-0 right-0 w-[80%] md:w-[284px] h-full border-l border-slate-100 bg-white overflow-auto"
   >
     <div class="p-3 flex items-center justify-between">
       <Dropdown align="end">
         <template #trigger>
-          <button class="flex w-8 h-8 menu">
+          <button class="flex w-8 h-8 menu circle-hover">
             <DotsMenuIcon class="m-auto" />
           </button>
         </template>
@@ -42,7 +48,7 @@ const members = dialog.chat.members;
         </template>
       </Dropdown>
 
-      <button @click="emit('close')">
+      <button @click="emit('close')" class="circle-hover">
         <CloseIcon />
       </button>
     </div>
@@ -51,7 +57,7 @@ const members = dialog.chat.members;
       class="flex items-center justify-center pb-4 w-full border-b border-slate-100"
     >
       <div class="text-center">
-        <Avatar :name="dialog.chat.name" size="64" font-size="22" />
+        <Avatar :name="dialog.chat.name" :photo="dialog.chat.photo" size="64" font-size="22" />
 
         <div class="mt-4 text-[#4d5461] text-lg font-bold">
           {{ dialog.chat.name }}
@@ -124,19 +130,54 @@ const members = dialog.chat.members;
       </div>
     </div>
 
-    <div class="px-4 mt-6">
+    <div class="px-4 mt-6 pb-4">
       <div class="mb-3 font-extrabold uppercase text-[#4d5461]">
         Участники диалога
       </div>
-
-      <div v-for="(member, index) in members" :key="index">
-        <Avatar
-          :name="member.name"
-          size="32"
-          font-size="12"
-          :title="member.name"
-        />
+      
+      <div v-if="members.length">
+        <div v-for="(member, index) in members" :key="index">
+          <Avatar
+            style="cursor: pointer"
+            v-tooltip="member.name"
+            :name="member.name"
+            :photo="member.photo"
+            size="32"
+            font-size="12"
+            :title="member.name"
+          />
+        </div>
       </div>
+      <div v-else>не найдено</div>
     </div>
   </div>
 </template>
+
+<style scoped lang="scss">
+.circle-hover {
+  z-index: 10;
+  position: relative;
+
+  &:before {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 35px;
+    height: 35px;
+    background: #f1f5f9;
+    transform: translate(-50%, -50%) scale(0.7);
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  &:hover {
+    &:before {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 100;
+    }
+  }
+}
+</style>

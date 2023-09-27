@@ -1,20 +1,24 @@
 <script setup>
-import { useSearch } from '@utils'
+import { useSidebarTabs } from '@utils'
 
-const { node, hide, events } = useSearch()
+// moved search logic to useSidebarTabs
+// const { node, searchVal, hide, events } = useSearch()
+
+const { list: tabs, events, node, active, searchVal, searchValDefault, change, hide } = useSidebarTabs()
 </script>
 
 <template>
-  <div class="z-50 absolute top-0 left-0 w-full h-[44px] flex px-3 items-center justify-between border-b border-slate-100 bg-white rounded-tl-lg">
+  <div class="z-10 absolute top-0 left-0 w-full h-[51px] flex px-3 items-center justify-between border-b border-slate-100 bg-white rounded-tl-lg">
     <div class="w-6">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M19 19L13 13M15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8Z" stroke="#60A1DD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
 
-    <div class="bg-white w-full h-full">
+    <div class="bg-white w-full h-full pe-2">
       <input
         v-on="events"
+        :value="searchValDefault"
         ref="node"
         type="text"
         placeholder="Введите запрос"

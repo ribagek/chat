@@ -1,9 +1,9 @@
 <script setup>
-import useSearch from '../../utils/search'
+import { useSidebarTabs } from '@utils'
 import HeaderSearch from './HeaderSearch.vue'
 import HeaderContent from './HeaderContent.vue'
 
-const { visible: isSearchVisible } = useSearch()
+const { visible: isSearchVisible } = useSidebarTabs()
 </script>
 
 <template>
@@ -19,7 +19,7 @@ const { visible: isSearchVisible } = useSearch()
 <style scoped lang="scss">
   .header {
     width: 100%;
-    height: 44px;
+    height: 50px;
 
     @apply
       flex

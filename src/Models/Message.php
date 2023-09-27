@@ -15,7 +15,7 @@ class Message extends Model
 {
     use BroadcastsEvents, HasFactory;
 
-    public $fillable = ['member_id', 'text_id', 'uniq', 'send', 'option_id'];
+    public $fillable = ['member_id', 'text_id', 'uniq', 'send', 'option_id', 'created_at'];
 
     /**
      * Get the channels that model events should broadcast on.
@@ -93,12 +93,14 @@ class Message extends Model
      *
      * @return array
      */
-    public function saveMessage($array)
+    public function saveMessage($array, $message_id = null)
     {
         $array = collect($array);
 
         return [
             'text_id' => $this->getText($array),
+            'message_id' => $message_id,
+            'uniq' => $array->get('created_at'),
         ];
     }
 

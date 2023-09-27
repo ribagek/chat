@@ -5,7 +5,7 @@ export default (date, format) => {
   moment.locale('ru-RU')
 
   if (format) {
-    return moment(date).format(format)
+    return moment(date).calendar(format)
   }
 
   return moment(date).calendar()

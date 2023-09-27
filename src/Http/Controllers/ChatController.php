@@ -6,6 +6,8 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Mdeskorg\Chat\Events\MessagePosted;
+use Mdeskorg\Chat\Events\MessageUpdated;
 use Mdeskorg\Chat\Http\Requests\MessageRequest;
 use Mdeskorg\Chat\Jobs\FilterChats;
 use Mdeskorg\Chat\Jobs\ReadMessages;
@@ -22,21 +24,21 @@ class ChatController extends Controller
      *
      * @return object
      */
-    public function index(ChatFilter $request)
+    public function index(ChatFilter $filter)
     {
         $project = Project::first();
-
+        
         return ChatResource::collection(
             $project->chats()
                 ->selectRaw('chats.*, (SELECT MAX(created_at) from messages WHERE messages.chat_id=chats.id) as latest_message_on')
                 ->orderBy('latest_message_on', 'DESC')
-                ->filter($request)
+                ->filter($filter)
                 ->simplePaginate(30)
         );
     }
 
     /**
-     * Get the available disks
+     * Show chat
      */
     public function show(Chat $chat)
     {
@@ -48,7 +50,7 @@ class ChatController extends Controller
     }
 
     /**
-     * Get the available disks
+     * Get chat messages
      */
     public function messages(Chat $chat)
     {
@@ -61,18 +63,37 @@ class ChatController extends Controller
     }
 
     /**
-     * Get the available disks
+     * Store message
      */
     public function store(Chat $chat, MessageRequest $request)
     {
         $user = User::first();
-        $message = (new Message)->saveMessage($request->validated());
+        if ($request->get('is_update') && $request->get('message_id')) {
+          $messageModel = Message::find($request->get('message_id'));
+          if (!$messageModel) {
+            return 'messageModel not found';
+          }
+        } else {
+          $messageModel = new Message;
+        }
+        
+        $messageData = $messageModel->saveMessage($request->validated(), $request->get('message_id'));
 
-        // dispatch(function () use ($chat, $user, $message) {
-        //     $chat->addMessage($user, $message);
-        // });
+//         dispatch(function () use ($chat, $user, $message) {
+//             $chat->addMessage($user, $message);
+//         });
+      
+        $data = new MessageResource($chat->addMessage($user, $messageData));
 
-        return new MessageResource($chat->addMessage($user, $message));
+        if ($request->get('is_update')) {
+          $event = new MessageUpdated($messageModel->id, auth()->user(), $data);
+        } else {
+          $event = new MessagePosted(auth()->user(), $data);
+        }
+
+        broadcast($event)->toOthers();
+      
+        return $data;
     }
 
     /**
@@ -85,15 +106,24 @@ class ChatController extends Controller
     {
         $user = User::first();
         //auth()->user()->member->id
-
-        $chat->stars()->firstOrCreate(
-            ['member_id' => $user->member->id],
-            $request->validate([
-                'star' => ['required', 'boolean'],
-            ])
-        );
+        $data = $request->validate([
+          'star' => ['required', 'boolean'],
+        ]);
+        
+        if ($data['star']) {
+          $chat->stars()->firstOrCreate(
+              ['member_id' => $user->member->id],
+              $request->validate([
+                  'star' => ['required', 'boolean'],
+              ])
+          );
+        } else {
+          $chat->stars()->delete();
+        }
 
         FilterChats::dispatch($chat);
+        
+        return 'OK';
     }
 
     /**

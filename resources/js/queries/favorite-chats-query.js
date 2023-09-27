@@ -1,4 +1,4 @@
-import { useQuery } from '@utils'
+import { useQuery, useSidebarTabs } from '@utils'
 import request from '../api/fetch-chats-list'
 import mapper from './chats-query/mapper'
 

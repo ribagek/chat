@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from "vue";
-import { useDialog } from "@utils";
+import { ref, watch } from "vue";
+import { useDialog, useCloak, useAxios, useEventBus, useEcho } from "@utils";
 import { Avatar, Dropdown, DropdownItem } from "@components";
 import {
   ArrowLeftIcon,
@@ -11,10 +11,57 @@ import {
   InfoIcon,
 } from "@icons";
 import DialogDetails from "./DialogDetails.vue";
+import { useElementHover } from "@vueuse/core";
 
-const detailsVisible = ref(false);
+const {emit, bus} = useEventBus()
 
-const { data: dialog } = useDialog();
+const { detailsVisible } = useCloak();
+const echo = useEcho();
+
+const starRef = ref(null);
+
+const isHovered = useElementHover(starRef);
+
+const { chatData: dialog } = useDialog();
+
+const isFavorite = ref(dialog.chat.star)
+const toggleFavorite = () => {
+  isFavorite.value  = !isFavorite.value;
+
+  useAxios(`chats/${dialog.chat.id}/set-star`, {
+    method: "POST",
+    data: {
+      star: isFavorite.value,
+    },
+  });
+
+  emit('toggleFavouriteEvent', dialog.chat.id, isFavorite.value);
+}
+
+watch(()=>bus.value.get('toggleFavouriteSidebarEvent'), (params) => {
+  if (dialog.chat.id == params[0]) {
+    isFavorite.value = params[1];
+  }
+})
+
+watch(()=>dialog.chat, (chat) => {
+  isFavorite.value  = chat.isFavorite;
+})
+
+const closeChat = (dialog) => {
+  if (dialog.chat) {
+    echo.leave(`chat.${dialog.chat.id}`);
+    dialog.chat = null;
+
+    window.history.pushState(null,null,"/chat");
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key == 'Escape') {
+    closeChat(dialog);
+  }
+})
 </script>
 
 <template>
@@ -23,14 +70,14 @@ const { data: dialog } = useDialog();
   >
     <div class="flex items-center">
       <div class="hidden md:block">
-        <Avatar :name="dialog.chat.name" width="52" height="52" />
+        <Avatar :name="dialog.chat.name" :photo="dialog.chat.photo" width="52" height="52" />
       </div>
 
       <div class="flex items-center md:hidden">
-        <button class="mr-2" @click="dialog.chat = null">
+        <button class="mr-2 circle-hover" @click="closeChat(dialog)"> 
           <ArrowLeftIcon />
         </button>
-        <Avatar :name="dialog.chat.name" size="40" />
+        <Avatar :name="dialog.chat.name" :photo="dialog.chat.photo" size="40" />
       </div>
 
       <div class="ml-3 md:text-sm">
@@ -48,14 +95,14 @@ const { data: dialog } = useDialog();
 
       <img :src="dialog.chat.robot.bot.photo" width="22" />
 
-      <button @click="dialog.chat.toggleFavorite">
-        <StarActiveIcon v-if="dialog.chat.isFavorite" size="22" />
-        <StarInactiveIcon v-else size="22" />
-      </button>
+      <button @click.stop="toggleFavorite" ref="starRef" class="btn-star" :class="isFavorite ? 'active' : ''">
+        <StarActiveIcon class="star-active" size="22" />
+        <StarInactiveIcon class="star-inactive" size="22" />
+      </button> 
 
       <Dropdown align="end" class="hidden md:block">
         <template #trigger>
-          <button class="menu">
+          <button class="menu circle-hover">
             <DotsMenuIcon />
           </button>
         </template>
@@ -86,7 +133,7 @@ const { data: dialog } = useDialog();
     </div>
 
     <button
-      class="z-[100] hidden md:flex absolute items-center justify-center bottom-[-22px] right-6 w-11 h-11 rounded-full bg-[#F1F5F9] transition-all"
+      class="z-[11] hidden md:flex absolute items-center justify-center bottom-[-22px] right-6 w-11 h-11 rounded-full bg-[#F1F5F9] transition-all"
       :class="{
         'right-[263px] rotate-180': detailsVisible,
       }"
@@ -138,7 +185,7 @@ const { data: dialog } = useDialog();
 </template>
 
 <style scoped lang="scss">
-.menu {
+.circle-hover {
   z-index: 10;
   position: relative;
 
@@ -161,6 +208,28 @@ const { data: dialog } = useDialog();
     &:before {
       transform: translate(-50%, -50%) scale(1);
       opacity: 100;
+    }
+  }
+}
+
+.transition-all {
+  transition-duration: 300ms;
+}
+
+.btn-star {
+  .star-active {
+    display: none;
+  }
+  .star-inactive {
+    display: block;
+  }
+
+  &.active, &:hover {
+    .star-active {
+      display: block;
+    }
+    .star-inactive {
+      display: none;
     }
   }
 }

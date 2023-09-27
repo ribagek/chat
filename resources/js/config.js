@@ -3,9 +3,11 @@ export default {
     broadcaster: "pusher",
     key: "multidesk",
     wsHost: window.location.hostname,
+    wssHost: window.location.hostname,
     wsPort: 6001,
-    cluster: "mt1",
     forceTLS: false,
     disableStats: true,
+    cluster: "mt1",
+    enabledTransports: ['ws', 'wss'],
   },
 }

@@ -31,11 +31,13 @@ class FilterChats implements ShouldQueue
         $filters = collect(['all', 'chat']);
 
         if ($this->chat->getUnReads() > 0) {
-            $filters->push('unread');
+            $filters->push('unanswered');
         }
-        if ($this->chat->stars()->exists()) {
-            $filters->push('stars');
-        }
+        
+        //commented this check - it prevented event from firing when star is unchecked
+//        if ($this->chat->stars()->exists()) {
+            $filters->push('favorite');
+//        }
 
         $filters->each(fn ($filter) => ChatEvent::dispatch($this->chat, $filter));
     }

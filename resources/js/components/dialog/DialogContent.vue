@@ -1,18 +1,21 @@
 <script setup>
-import { ref } from 'vue'
 import Header from './Header.vue'
 import MessagesList from './MessagesList.vue'
 import Footer from './Footer.vue'
 
-const messages = ref([])
+const props = defineProps({
+  messages: Array,
+  meta: Array,
+});
+
 </script>
 
 <template>
-  <div class="dialog-content">
+  <div class="dialog-content h-full">
     <Header />
 
     <div class="flex flex-col h-[calc(100dvh-69px)] md:h-[calc(100vh-293px)]">
-      <MessagesList :mess="messages" />
+      <MessagesList :mess="messages" :meta="meta" />
 
       <Footer :mess="messages" class="mt-auto" />
     </div>

@@ -1,7 +1,9 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { Dropdown, DropdownItem } from "@components";
-import { useCurrentUser, useDialog, useAxios } from "@utils";
+import { useCurrentUser, useDialog, useAxios, useEventBus } from "@utils";
+
+const {emit} = useEventBus()
 
 const props = defineProps({
   mess: Array,
@@ -22,40 +24,109 @@ const makeid = (length) => {
 
 const currentUser = useCurrentUser();
 
-const { data: dialog } = useDialog();
+const { chatData: dialog } = useDialog();
 
+const active = ref('text');
 const text = ref(null);
+const description = ref(dialog.chat.description);
+const inputField = ref();
+const focusInput = () => {
+  inputField.value.focus()
+}
 
+watch(dialog.chat.id, async (newDialog, oldDialog) => {console.log('newDialog', newDialog);
+  active.value = 'text'
+  text.value = ''
+  description.value = newDialog.chat.description
+  focusInput()
+})
+
+const calcRows = (text) => {
+  let numberOfLineBreaks = 1;
+    
+  if (text) {
+    numberOfLineBreaks = (text.match(/\n/g) || []).length;
+  }
+  
+  return numberOfLineBreaks < 1 ? 1 : numberOfLineBreaks;
+}
+
+const isDisabled = (active, text, description) => {
+  return (active == 'text' && !text)/* || (active == 'description' && !description)*/;
+}
+
+const buttonSendClass = (active, text, description) => {
+  return isDisabled(active, text, description) ? '' : 'active';
+}
+
+const change = (tab) => {
+  active.value = tab;
+}
 const submit = () => {
-  //console.log(currentUser.value);
-
-  dialog.chat.message = text.value;
-  dialog.chat.sender_user_id = currentUser.value.id;
-
-  props.mess.value.push({
-    id: null,
-    created_at: new Date(),
-    isNew: true,
-    send: "wait",
-    text: text.value,
-    sender: {
-      id: currentUser.value.id,
-      name: currentUser.value.name,
-      photo: null,
-      type: "user",
-    },
-    options: null,
-  });
-
-  useAxios(`chats/${dialog.chat.id}/messages`, {
-    method: "POST",
-    data: {
+  if (active.value == 'text') {
+    const textValue = text.value.trim();
+    if (textValue.length === 0) {
+      return;
+    }
+    
+    dialog.chat.message = textValue;
+    dialog.chat.sender_user_id = currentUser.value.id;
+    const date = new Date();
+    const uniq = date.getTime();
+    console.log('props.mess', props.mess);
+    props.mess.push({
+      id: null,
+      created_at: date,
+      uniq: uniq,
+      isNew: true,
+      send: "wait",
       text: text.value,
-      // messageId,
-    },
-  });
+      sender: {
+        id: currentUser.value.id,
+        name: currentUser.value.name,
+        photo: null,
+        type: "user",
+      },
+      options: null,
+    });
+    
+    useAxios(`chats/${dialog.chat.id}/messages`, {
+      method: "POST",
+      data: {
+        text: textValue,
+        created_at: uniq,
+        // added params for test. Can be used to update msg
+        // is_update: true,//test
+        // message_id: props.mess.value.at(-1).id,//test
+        // message_text: props.mess.value.at(-1).text,//test
+      },
+      // onSuccess: ({ data }) => {
+      //   console.log('data onSuccess', data);
+      //   props.mess.value.push(data);
+      // },
+    });
+  
+    text.value = null;
+  } else if (active.value == 'description'/* && description.value*/) {
+    const descriptionValue = description.value.trim();
+    
+    useAxios(`chats/${dialog.chat.id}/set-description`, {
+      method: "POST",
+      data: {
+        description: descriptionValue,
+      },
+      onSuccess: (data) => {
+        dialog.chat.description = descriptionValue;
+      },
+    });
+  }
+};
 
-  text.value = null;
+const keydown = (e) => {
+  if (e.keyCode == 13 && !e.shiftKey) {
+    e.preventDefault();
+    submit();
+  }
 };
 </script>
 
@@ -63,16 +134,20 @@ const submit = () => {
   <div>
     <div class="px-7">
       <div class="flex items-center space-x-2.5">
-        <button class="py-3 font-bold border-b border-[#60A1DD]">
+        <button class="btn-tab py-3"
+                :class="{ 'active': 'text' == active }"
+                @click="change('text')">
           Ответить
         </button>
         <!-- <button class="py-3">Заметки</button> -->
-        <button class="py-3">Описание</button>
+        <button class="btn-tab py-3"
+                :class="{ 'active': 'description' == active }"
+                @click="change('description')">Описание</button>
       </div>
     </div>
 
     <form
-      class="flex items-center px-7 border-t border-slate-100"
+      class="flex items-end px-7 border-t border-slate-100 gap-2"
       @submit.prevent="submit"
     >
       <!-- <button>
@@ -83,14 +158,27 @@ const submit = () => {
 
       <textarea
         v-model="text"
+        v-show="active == 'text'"
+        @keydown="keydown"
+        autofocus
+        ref="inputField"
+        type="text"
+        class="py-3 w-full resize-none max-h-[200px] text-[16px]"
+        :rows="calcRows(text)"
+        placeholder="Напишите сообщение..."
+      />
+      <textarea
+        v-model="description"
+        v-show="active == 'description'"
+        @keydown="keydown"
         autofocus
         type="text"
         class="py-3 w-full resize-none max-h-[200px] text-[16px]"
-        rows="1"
-        placeholder="Напишите сообщение..."
+        :rows="calcRows(description)"
+        placeholder="Напишите описание..."
       />
 
-      <div class="ml-auto flex items-center space-x-4">
+      <div class="ml-auto flex items-center space-x-4 mb-2">
         <!-- <Dropdown align="top">
           <template #trigger>
             <button class="py-1">
@@ -129,7 +217,9 @@ const submit = () => {
           </template>
         </Dropdown> -->
 
-        <button type="submit">
+        <button type="submit" class="button-send" 
+                :class="buttonSendClass(active, text, description)" 
+                :disabled="isDisabled(active, text, description)">
           <svg
             width="24"
             height="24"
@@ -155,3 +245,38 @@ const submit = () => {
     </form>
   </div>
 </template>
+
+<style scoped lang="scss"> 
+.button-send {
+  &[disabled] {
+    circle {
+      fill: #60A1DD80;
+    }
+  }
+  &.active:hover {
+    circle {
+      fill: #1E96C8;
+    }
+  }
+}
+
+.btn-tab {
+  position: relative;
+  &:hover {
+    color: #60A1DD;
+  }
+  &.active {
+    color: #60A1DD;
+
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: 0px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: #60A1DD;
+    }
+  }
+}
+</style>

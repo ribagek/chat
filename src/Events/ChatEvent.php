@@ -26,6 +26,11 @@ class ChatEvent implements ShouldBroadcast
         $this->type = $type;
     }
 
+    public function broadcastAs()
+    {
+      return 'chatEvent';
+    }
+
     /**
      * Get the data to broadcast.
      *

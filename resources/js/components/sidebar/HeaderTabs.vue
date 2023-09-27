@@ -4,9 +4,12 @@ import {
   ScrollAreaViewport,
   ScrollAreaScrollbar,
 } from 'radix-vue'
-import { useSidebarTabs } from '@utils'
 
-const { list: tabs, active, change } = useSidebarTabs()
+const props = defineProps({
+  tabs: Object,
+  active: 'all',
+  change: Object
+});
 </script>
 
 <template>
@@ -15,11 +18,11 @@ const { list: tabs, active, change } = useSidebarTabs()
     <ScrollAreaViewport class="w-full h-full rounded wrapper">
       <div class="filter">
         <div
-        v-for="(tab, index) in tabs"
+        v-for="(tab, index) in props.tabs"
         :key="index"
         class="filter-item"
-        :class="{ active: tab.value == active }"
-        @click="change(tab.value)"
+        :class="{ active: tab.value == props.active }"
+        @click="props.change(tab)"
         >{{ tab.label }}</div>
       </div>
     </ScrollAreaViewport>
@@ -32,7 +35,7 @@ const { list: tabs, active, change } = useSidebarTabs()
 <style scoped lang="scss">
 :deep(.wrapper) {
   &:after {
-    z-index: 100;
+    z-index: 3;
     position: absolute;
     top: 0;
     right: 0px;
@@ -46,7 +49,7 @@ const { list: tabs, active, change } = useSidebarTabs()
 }
   .filter {
     width: 100%;
-    height: 44px;
+    height: 50px;
 
     @apply flex px-3 items-center space-x-3 whitespace-nowrap overflow-auto;
 
@@ -55,10 +58,14 @@ const { list: tabs, active, change } = useSidebarTabs()
       height: 100%;
       
       @apply flex items-center cursor-pointer select-none;
+
+      &:hover {
+        color: #60A1DD;
+      }
     }
 
     .active {
-      // ..
+      color: #60A1DD;
       
       &:after {
         content: '';

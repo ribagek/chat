@@ -18,6 +18,7 @@ use Mdeskorg\Chat\Http\Controllers\ChatController;
 
 /** CHATS */
 Route::get('chats', [ChatController::class, 'index']);
+Route::post('chats', [ChatController::class, 'index']);
 Route::get('chats/{chat}', [ChatController::class, 'show']);
 Route::post('chats/{chat}/set-star', [ChatController::class, 'star']);
 Route::post('chats/{chat}/set-description', [ChatController::class, 'description']);

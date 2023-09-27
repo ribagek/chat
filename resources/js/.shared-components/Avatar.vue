@@ -8,6 +8,7 @@ import {
 
 const props = defineProps({
   name: String,
+  photo: String,
   size: {
     type: [String, Number],
     default: 45,
@@ -26,11 +27,15 @@ const acronym = computed(() => {
     data[data.length-1].charAt(0),
   ];
 })
+const avatarStyle = computed(() => {
+  return 'background-image: url('+props.photo+')';
+})
 </script>
 
 <template>
   <Root class="avatar-root" :style="{ width: `${size}px`, height: `${size}px`, fontSize: `${fontSize}px` }">
-    <Fallback class="avatar-fallback">{{ acronym.join('') }}</Fallback>
+    <div class="avatar-bg" :style="avatarStyle" v-if="photo"></div>
+    <Fallback v-else class="avatar-fallback">{{ acronym.join('') }}</Fallback>
   </Root>
 </template>
 
@@ -38,6 +43,13 @@ const acronym = computed(() => {
 .avatar-root {
   width: 45px;
   height: 45px;
+  
+  .avatar-bg {
+    background-size: cover;
+    background-position: center;
+    width: 100%;
+    height: 100%;
+  }
 
   @apply
     inline-flex
